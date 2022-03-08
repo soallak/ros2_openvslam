@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.5)
 project(openvslam_ros LANGUAGES CXX C)
 
+set(CMAKE_CXX_STANDARD 17)
+
 if(POLICY CMP0042)
     cmake_policy(SET CMP0042 NEW)
 endif()
@@ -24,43 +26,6 @@ endif()
 
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 
-###########################
-# Set application options #
-###########################
-
-set(USE_SANITIZER OFF CACHE BOOL "Enable Address/Memory sanitizer (set env as ASAN_OPTIONS=detect_leaks=1)")
-
-if(USE_SANITIZER)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fno-omit-frame-pointer -fsanitize=address")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-omit-frame-pointer -fsanitize=address")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fno-omit-frame-pointer -fsanitize=address")
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fno-omit-frame-pointer -fsanitize=address")
-    message(STATUS "Address/Memory sanitizer: ENABLED")
-else()
-    message(STATUS "Address/Memory sanitizer: DISABLED")
-endif()
-
-set(USE_STACK_TRACE_LOGGER OFF CACHE BOOL "Enable automatic stack trace logger of google-glog")
-
-if(USE_STACK_TRACE_LOGGER)
-    message(STATUS "Stack trace logger: ENABLED")
-    # Glog
-    find_package(Glog REQUIRED)
-    include_directories(${GLOG_INCLUDE_DIR})
-else()
-    message(STATUS "Stack trace logger: DISABLED")
-endif()
-
-set(USE_GOOGLE_PERFTOOLS OFF CACHE BOOL "Enable profiler of google-perftools")
-
-if(USE_GOOGLE_PERFTOOLS)
-    message(STATUS "Google Perftools: ENABLED")
-    # Gperftools
-    find_package(Gperftools REQUIRED)
-    include_directories(${GPERFTOOLS_INCLUDE_DIRS})
-else()
-    message(STATUS "Google Perftools: DISABLED")
-endif()
 
 ########################
 # Set compiler options #
@@ -87,30 +52,6 @@ else()
     message(STATUS "Architecture-aware optimization (-march=native): DISABLED")
 endif()
 
-#######################
-# Check C++11 support #
-#######################
-
-include(CheckCXXCompilerFlag)
-check_cxx_compiler_flag("-std=c++17" COMPILER_SUPPORTS_CXX17)
-check_cxx_compiler_flag("-std=c++14" COMPILER_SUPPORTS_CXX14)
-check_cxx_compiler_flag("-std=c++11" COMPILER_SUPPORTS_CXX11)
-check_cxx_compiler_flag("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
-if(COMPILER_SUPPORTS_CXX17)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
-    message(STATUS "C++11 support: OK (-std=c++17)")
-elseif(COMPILER_SUPPORTS_CXX14)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
-    message(STATUS "C++11 support: OK (-std=c++14)")
-elseif(COMPILER_SUPPORTS_CXX11)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-    message(STATUS "C++11 support: OK (-std=c++11)")
-elseif(COMPILER_SUPPORTS_CXX0X)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
-    message(STATUS "C++11 support: OK (-std=c++0x)")
-else()
-    message(FATAL_ERROR "The compiler ${CMAKE_CXX_COMPILER} has no C++11 support. Please use a different C++ compiler.")
-endif()
 
 #################
 # Find packages #
@@ -137,13 +78,7 @@ find_package(Threads REQUIRED)
 find_package(openvslam REQUIRED)
 
 # OpenCV
-find_package(OpenCV 3.3.1 QUIET)
-if(NOT OpenCV_FOUND)
-    find_package(OpenCV 4.0)
-    if(NOT OpenCV_FOUND)
-        message(FATAL_ERROR "OpenCV >= 3.3.1 not found")
-    endif()
-endif()
+find_package(OpenCV REQUIRED)
 message(STATUS "Use OpenCV ${OpenCV_VERSION}")
 include_directories(${OpenCV_INCLUDE_DIRS})
 
@@ -171,19 +106,6 @@ set(USE_PANGOLIN_VIEWER OFF CACHE BOOL "Enable Pangolin Viewer")
 if(USE_PANGOLIN_VIEWER)
     find_library(Pangolin_Viewer_LIB pangolin_viewer)
     find_package(Pangolin REQUIRED)
-endif()
-
-# socket publisher
-set(USE_SOCKET_PUBLISHER OFF CACHE BOOL "Enable Socket Publisher")
-if(USE_SOCKET_PUBLISHER)
-    find_package(sioclient REQUIRED)
-    find_package(Protobuf REQUIRED)
-    find_library(Socket_Publisher_LIB socket_publisher)
-    if(NOT PROTOBUF_PROTOC_EXECUTABLE)
-        message(FATAL_ERROR "Could not find protoc executable (PROTOBUF_PROTOC_EXECUTABLE)")
-    endif()
-    message(STATUS "Found protoc executable: ${PROTOBUF_PROTOC_EXECUTABLE}")
-    include_directories(${SIOCLIENT_INCLUDE_DIR} ${PROTOBUF_INCLUDE_DIRS})
 endif()
 
 #########
