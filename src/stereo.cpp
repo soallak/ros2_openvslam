@@ -9,8 +9,8 @@ stereo::stereo(const std::shared_ptr<openvslam::config>& cfg,
       rectifier_(rectify
                      ? std::make_unique<openvslam::util::stereo_rectifier>(cfg)
                      : nullptr),
-      left_sf_(node_, "camera/left/image_raw"),
-      right_sf_(node_, "camera/right/image_raw") {
+      left_sf_(node_, "left/image_rect"),
+      right_sf_(node_, "right/image_rect") {
   use_exact_time_ = false;
   use_exact_time_ = node_->declare_parameter("use_exact_time", use_exact_time_);
   if (use_exact_time_) {
