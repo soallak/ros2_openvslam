@@ -27,7 +27,7 @@ class system {
  public:
   static std::unique_ptr<system> create(
       std::shared_ptr<openvslam::config> const& cfg,
-      std::string vocab_file_path, std::string maks_img_path, bool rectify);
+      std::string vocab_file_path, std::string maks_img_path);
 
   void publish_pose(const Eigen::Matrix4d& cam_pose_wc,
                     const rclcpp::Time& stamp);

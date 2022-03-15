@@ -21,10 +21,10 @@
 void tracking(const std::shared_ptr<openvslam::config>& cfg,
               const std::string& vocab_file_path,
               const std::string& mask_img_path, const bool eval_log,
-              const std::string& map_db_path, const bool rectify) {
+              const std::string& map_db_path) {
   // TODO: Replace this with a factormy method
-  std::shared_ptr<openvslam_ros::system> ros = openvslam_ros::system::create(
-      cfg, vocab_file_path, mask_img_path, rectify);
+  std::shared_ptr<openvslam_ros::system> ros =
+      openvslam_ros::system::create(cfg, vocab_file_path, mask_img_path);
 
   auto& SLAM = ros->SLAM_;
   // startup the SLAM process
@@ -117,7 +117,7 @@ int main(int argc, char* argv[]) {
       "", "eval-log", "store trajectory and tracking times for evaluation");
   auto map_db_path = op.add<popl::Value<std::string>>(
       "", "map-db", "store a map database at this path after SLAM", "");
-  auto rectify = op.add<popl::Switch>("r", "rectify", "rectify stereo image");
+
   try {
     op.parse(argc, argv);
   } catch (const std::exception& e) {
@@ -158,7 +158,7 @@ int main(int argc, char* argv[]) {
 
   // run tracking
   tracking(cfg, vocab_file_path->value(), mask_img_path->value(),
-           eval_log->is_set(), map_db_path->value(), rectify->value());
+           eval_log->is_set(), map_db_path->value());
 
   return EXIT_SUCCESS;
 }

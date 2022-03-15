@@ -19,14 +19,14 @@ namespace openvslam_ros {
 
 std::unique_ptr<system> system::create(
     std::shared_ptr<openvslam::config> const& cfg, std::string vocab_file_path,
-    std::string mask_img_path, bool rectify) {
+    std::string mask_img_path) {
   if (cfg->camera_->setup_type_ == openvslam::camera::setup_type_t::Monocular) {
     return std::make_unique<openvslam_ros::mono>(cfg, vocab_file_path,
                                                  mask_img_path);
   } else if (cfg->camera_->setup_type_ ==
              openvslam::camera::setup_type_t::Stereo) {
     return std::make_unique<openvslam_ros::stereo>(cfg, vocab_file_path,
-                                                   mask_img_path, rectify);
+                                                   mask_img_path);
   } else if (cfg->camera_->setup_type_ ==
              openvslam::camera::setup_type_t::RGBD) {
     return std::make_unique<openvslam_ros::rgbd>(cfg, vocab_file_path,
