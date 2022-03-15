@@ -22,9 +22,6 @@ rgbd::rgbd(const std::shared_ptr<openvslam::config>& cfg,
 
 void rgbd::callback(const sensor_msgs::msg::Image::ConstSharedPtr& color,
                     const sensor_msgs::msg::Image::ConstSharedPtr& depth) {
-  if (camera_optical_frame_.empty()) {
-    camera_optical_frame_ = color->header.frame_id;
-  }
   auto colorcv = cv_bridge::toCvShare(color)->image;
   auto depthcv = cv_bridge::toCvShare(depth)->image;
   if (colorcv.empty() || depthcv.empty()) {

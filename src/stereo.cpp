@@ -27,9 +27,6 @@ stereo::stereo(const std::shared_ptr<openvslam::config>& cfg,
 
 void stereo::callback(const sensor_msgs::msg::Image::ConstSharedPtr& left,
                       const sensor_msgs::msg::Image::ConstSharedPtr& right) {
-  if (camera_optical_frame_.empty()) {
-    camera_optical_frame_ = left->header.frame_id;
-  }
   auto leftcv = cv_bridge::toCvShare(left)->image;
   auto rightcv = cv_bridge::toCvShare(right)->image;
 

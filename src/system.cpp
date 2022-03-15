@@ -42,13 +42,13 @@ system::system(const std::shared_ptr<openvslam::config>& cfg,
                const std::string& mask_img_path)
     : SLAM_(cfg, vocab_file_path),
       cfg_(cfg),
-      node_(std::make_unique<rclcpp::Node>("run_slam")),
+      node_(std::make_unique<rclcpp::Node>("slam")),
       custom_qos_(rmw_qos_profile_default),
       mask_(mask_img_path.empty()
                 ? cv::Mat{}
                 : cv::imread(mask_img_path, cv::IMREAD_GRAYSCALE)),
       pose_pub_(
-          node_->create_publisher<nav_msgs::msg::Odometry>("~/camera_pose", 1)),
+          node_->create_publisher<nav_msgs::msg::Odometry>("camera_pose", 1)),
       map_to_odom_broadcaster_(
           std::make_unique<tf2_ros::TransformBroadcaster>(node_)),
       tf_(std::make_unique<tf2_ros::Buffer>(node_->get_clock())),
@@ -86,21 +86,13 @@ void system::publish_pose(const Eigen::Matrix4d& cam_pose_wc,
   // Send map->odom transform. Set publish_tf to false if not using TF
   if (publish_tf_) {
     try {
-      auto camera_to_odom = tf_->lookupTransform(
-          camera_optical_frame_, odom_frame_,
-          tf2_ros::fromMsg(builtin_interfaces::msg::Time(stamp)),
-          tf2::durationFromSec(0.0));
-      Eigen::Affine3d camera_to_odom_affine =
-          tf2::transformToEigen(camera_to_odom.transform);
-
-      auto map_to_odom_msg =
-          tf2::eigenToTransform(map_to_camera_affine * camera_to_odom_affine);
+      auto map_to_camera_msg = tf2::eigenToTransform(map_to_camera_affine);
       tf2::TimePoint transform_timestamp =
           tf2_ros::fromMsg(stamp) + tf2::durationFromSec(transform_tolerance_);
-      map_to_odom_msg.header.stamp = tf2_ros::toMsg(transform_timestamp);
-      map_to_odom_msg.header.frame_id = map_frame_;
-      map_to_odom_msg.child_frame_id = odom_frame_;
-      map_to_odom_broadcaster_->sendTransform(map_to_odom_msg);
+      map_to_camera_msg.header.stamp = tf2_ros::toMsg(transform_timestamp);
+      map_to_camera_msg.header.frame_id = map_frame_;
+      map_to_camera_msg.child_frame_id = camera_frame_;
+      map_to_odom_broadcaster_->sendTransform(map_to_camera_msg);
     } catch (tf2::TransformException& ex) {
       RCLCPP_ERROR_STREAM_THROTTLE(node_->get_logger(), *node_->get_clock(),
                                    1000, "Transform failed: " << ex.what());
@@ -109,14 +101,8 @@ void system::publish_pose(const Eigen::Matrix4d& cam_pose_wc,
 }
 
 void system::setParams() {
-  odom_frame_ = std::string("odom");
-  odom_frame_ = node_->declare_parameter("odom_frame", odom_frame_);
-
-  map_frame_ = std::string("map");
+  map_frame_ = std::string("map_frame");
   map_frame_ = node_->declare_parameter("map_frame", map_frame_);
-
-  base_link_ = std::string("base_footprint");
-  base_link_ = node_->declare_parameter("base_link", base_link_);
 
   camera_frame_ = std::string("camera_frame");
   camera_frame_ = node_->declare_parameter("camera_frame", camera_frame_);
@@ -133,12 +119,6 @@ void system::setParams() {
 
 void system::init_pose_callback(
     const geometry_msgs::msg::PoseWithCovarianceStamped::SharedPtr msg) {
-  if (camera_optical_frame_.empty()) {
-    RCLCPP_ERROR(node_->get_logger(),
-                 "Camera link is not set: no images were received yet");
-    return;
-  }
-
   Eigen::Translation3d trans(msg->pose.pose.position.x,
                              msg->pose.pose.position.y,
                              msg->pose.pose.position.z);
@@ -163,22 +143,9 @@ void system::init_pose_callback(
     return;
   }
 
-  Eigen::Affine3d base_link_to_camera_affine;
-  try {
-    auto base_link_to_camera = tf_->lookupTransform(
-        base_link_, camera_optical_frame_, tf2_ros::fromMsg(msg->header.stamp),
-        tf2::durationFromSec(0.0));
-    base_link_to_camera_affine =
-        tf2::transformToEigen(base_link_to_camera.transform);
-  } catch (tf2::TransformException& ex) {
-    RCLCPP_ERROR_STREAM_THROTTLE(node_->get_logger(), *node_->get_clock(), 1000,
-                                 "Transform failed: " << ex.what());
-    return;
-  }
-
   Eigen::Matrix4d cam_pose_cv =
       (rot_cv_to_ros_map_frame * map_to_initialpose_frame_affine *
-       initialpose_affine * base_link_to_camera_affine)
+       initialpose_affine)
           .matrix();
 
   const Eigen::Vector3d normal_vector =

@@ -13,9 +13,6 @@ mono::mono(const std::shared_ptr<openvslam::config>& cfg,
       "raw", custom_qos_);
 }
 void mono::callback(const sensor_msgs::msg::Image::ConstSharedPtr& msg) {
-  if (camera_optical_frame_.empty()) {
-    camera_optical_frame_ = msg->header.frame_id;
-  }
   const rclcpp::Time tp_1 = node_->now();
   const double timestamp = tp_1.seconds();
 
