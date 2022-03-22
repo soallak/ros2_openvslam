@@ -48,7 +48,7 @@ void stereo::callback(const sensor_msgs::msg::Image::ConstSharedPtr& left,
   const rclcpp::Time tp_2 = node_->now();
   TP_COMPUTE_CPU(
       node_, std::chrono::nanoseconds(tp_2.nanoseconds() - tp_1.nanoseconds()),
-      std::string(__func__) + ":feed_stereo_frame");
+      "slam:feed_stereo_frame");
   const double track_time = (tp_2 - tp_1).seconds();
 
   // track times in seconds
@@ -58,7 +58,7 @@ void stereo::callback(const sensor_msgs::msg::Image::ConstSharedPtr& left,
     publish_pose(*cam_pose_wc, left->header.stamp);
   }
 
-  TP_CALLBACK_ENTER(node_, node_->now(), __func__);
+  TP_CALLBACK_EXIT(node_, node_->now(), __func__);
 }
 
 }  // namespace openvslam_ros
