@@ -70,6 +70,7 @@ find_package(tf2_eigen REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 find_package(tf2_msgs REQUIRED)
 find_package(tf2_ros REQUIRED)
+find_package(slam_tracepoint_provider REQUIRED)
 
 # thread library
 find_package(Threads REQUIRED)

@@ -45,7 +45,8 @@ foreach(EXECUTABLE_TARGET IN LISTS EXECUTABLE_TARGETS)
                               tf2_eigen
                               tf2_geometry_msgs
                               tf2_msgs
-                              tf2_ros)
+                              tf2_ros
+                              slam_tracepoint_provider)
     install(TARGETS ${EXECUTABLE_TARGET}
             DESTINATION lib/${PROJECT_NAME})
 
