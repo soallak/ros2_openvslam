@@ -42,15 +42,15 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -ffast-math")
 
 set(BUILD_WITH_MARCH_NATIVE OFF CACHE BOOL "Enable architecture-aware optimization (-march=native)")
 
-if(BUILD_WITH_MARCH_NATIVE)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mtune=native -march=native")
-    set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -mtune=native -march=native")
-    message(STATUS "Architecture-aware optimization (-march=native): ENABLED")
-else()
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mtune=native")
-    set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -mtune=native")
-    message(STATUS "Architecture-aware optimization (-march=native): DISABLED")
-endif()
+#if(BUILD_WITH_MARCH_NATIVE)
+#    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mtune=native -march=native")
+#    set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -mtune=native -march=native")
+#    message(STATUS "Architecture-aware optimization (-march=native): ENABLED")
+#else()
+#    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mtune=native")
+#    set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -mtune=native")
+#    message(STATUS "Architecture-aware optimization (-march=native): DISABLED")
+#endif()
 
 
 #################
@@ -88,7 +88,7 @@ find_package(Eigen3 3.3 REQUIRED)
 include_directories(${EIGEN3_INCLUDE_DIR})
 
 # yaml-cpp
-find_package(yaml-cpp REQUIRED)
+# find_package(yaml-cpp REQUIRED)
 
 # spdlog
 set(spdlog_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/3rd/spdlog/include)
