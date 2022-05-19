@@ -11,8 +11,6 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgcodecs.hpp>
 
-#include "mono.hpp"
-#include "rgbd.hpp"
 #include "stereo.hpp"
 
 namespace openvslam_ros {
@@ -20,17 +18,9 @@ namespace openvslam_ros {
 std::unique_ptr<system> system::create(
     std::shared_ptr<openvslam::config> const& cfg, std::string vocab_file_path,
     std::string mask_img_path) {
-  if (cfg->camera_->setup_type_ == openvslam::camera::setup_type_t::Monocular) {
-    return std::make_unique<openvslam_ros::mono>(cfg, vocab_file_path,
-                                                 mask_img_path);
-  } else if (cfg->camera_->setup_type_ ==
-             openvslam::camera::setup_type_t::Stereo) {
+  if (cfg->camera_->setup_type_ == openvslam::camera::setup_type_t::Stereo) {
     return std::make_unique<openvslam_ros::stereo>(cfg, vocab_file_path,
                                                    mask_img_path);
-  } else if (cfg->camera_->setup_type_ ==
-             openvslam::camera::setup_type_t::RGBD) {
-    return std::make_unique<openvslam_ros::rgbd>(cfg, vocab_file_path,
-                                                 mask_img_path);
   } else {
     throw std::runtime_error("Invalid setup type: " +
                              cfg->camera_->get_setup_type_string());

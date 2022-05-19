@@ -6,7 +6,7 @@ set(EXECUTABLE_TARGETS "")
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
-set(SRCS system.cpp mono.cpp rgbd.cpp stereo.cpp)
+set(SRCS system.cpp stereo.cpp)
 
 add_executable(run_slam run_slam.cc ${SRCS})
 list(APPEND EXECUTABLE_TARGETS run_slam)
@@ -27,26 +27,28 @@ foreach(EXECUTABLE_TARGET IN LISTS EXECUTABLE_TARGETS)
         yaml-cpp)
 
     # build
-    target_include_directories(${EXECUTABLE_TARGET}
-                               PRIVATE ${rclcpp_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS})
     target_link_libraries(${EXECUTABLE_TARGET}
-                          PRIVATE ${openvslam_LIBS} ${rclcpp_LIBRARIES} ${OpenCV_LIBRARIES})
+                          PRIVATE openvslam::openvslam)
+
     ament_target_dependencies(${EXECUTABLE_TARGET}
-                              PUBLIC
-                              rclcpp
-                              cv_bridge
-                              image_transport
-                              message_filters
-                              rcutils
-                              geometry_msgs
-                              nav_msgs
-                              sensor_msgs
-                              tf2
-                              tf2_eigen
-                              tf2_geometry_msgs
-                              tf2_msgs
-                              tf2_ros
-                              slam_tracepoint_provider)
+    PUBLIC
+        rclcpp
+        cv_bridge
+        image_transport
+        message_filters
+        rcutils
+        geometry_msgs
+        nav_msgs
+        sensor_msgs
+        tf2
+        tf2_eigen
+        tf2_geometry_msgs
+        tf2_msgs
+        tf2_ros
+        slam_tracepoint_provider
+        OpenCV
+        spdlog
+    )
     install(TARGETS ${EXECUTABLE_TARGET}
             DESTINATION lib/${PROJECT_NAME})
 
