@@ -15,45 +15,84 @@
 
 namespace openvslam_ros {
 
-std::unique_ptr<system> system::create(
-    std::shared_ptr<openvslam::config> const& cfg, std::string vocab_file_path,
-    std::string mask_img_path) {
+std::unique_ptr<System> System::Create(
+    std::shared_ptr<openvslam::config> const& cfg,
+    std::string vocab_file_path) {
   if (cfg->camera_->setup_type_ == openvslam::camera::setup_type_t::Stereo) {
-    return std::make_unique<openvslam_ros::stereo>(cfg, vocab_file_path,
-                                                   mask_img_path);
+    return std::make_unique<openvslam_ros::Stereo>(cfg, vocab_file_path);
   } else {
     throw std::runtime_error("Invalid setup type: " +
                              cfg->camera_->get_setup_type_string());
   }
 }
 
-system::system(const std::shared_ptr<openvslam::config>& cfg,
-               const std::string& vocab_file_path,
-               const std::string& mask_img_path)
-    : SLAM_(cfg, vocab_file_path),
+System::System(const std::shared_ptr<openvslam::config>& cfg,
+               const std::string& vocab_file_path)
+    : slam_(cfg, vocab_file_path),
       cfg_(cfg),
       node_(std::make_unique<rclcpp::Node>("slam")),
-      custom_qos_(rmw_qos_profile_default),
-      mask_(mask_img_path.empty()
-                ? cv::Mat{}
-                : cv::imread(mask_img_path, cv::IMREAD_GRAYSCALE)),
-      pose_pub_(
-          node_->create_publisher<nav_msgs::msg::Odometry>("camera_pose", 1)),
+
       map_to_odom_broadcaster_(
           std::make_unique<tf2_ros::TransformBroadcaster>(node_)),
       tf_(std::make_unique<tf2_ros::Buffer>(node_->get_clock())),
       transform_listener_(std::make_unique<tf2_ros::TransformListener>(*tf_)) {
-  custom_qos_.depth = 1;
-  exec_.add_node(node_);
+  DeclareAndSetParams();
+  pose_pub_ = node_->create_publisher<nav_msgs::msg::Odometry>("camera_pose",
+                                                               queue_size_);
   init_pose_sub_ =
       node_->create_subscription<geometry_msgs::msg::PoseWithCovarianceStamped>(
-          "/initialpose", 1,
-          std::bind(&system::init_pose_callback, this, std::placeholders::_1));
-  setParams();
+          "/initialpose", queue_size_,
+          std::bind(&System::InitPoseCallback, this, std::placeholders::_1));
+}  // namespace openvslam_ros
+
+openvslam::system& System::GetSLAMSystem() { return slam_; }
+
+System::~System() { Stop(); }
+
+void System::Start() {
+  if (is_running_) return;
+  exec_.add_node(node_);
+#ifdef USE_PANGOLIN_VIEWER
+  if (start_pangolin_viewer_) {
+    pangolin_viewer_ = std::make_unique<pangolin_viewer::viewer>(
+        openvslam::util::yaml_optional_ref(cfg_->yaml_node_, "PangolinViewer"),
+        &slam_, slam_.get_frame_publisher(), slam_.get_map_publisher());
+
+    pangolin_viewer_thread_ = std::thread([&]() {
+      pangolin_viewer_->run();
+      if (slam_.terminate_is_requested()) {
+        // wait until the loop BA is finished
+        while (slam_.loop_BA_is_running()) {
+          std::this_thread::sleep_for(std::chrono::microseconds(5000));
+        }
+      }
+    });
+  }
+#endif
+  slam_.startup();
+  is_running_ = true;
+  exec_.spin();
 }
 
-void system::publish_pose(const Eigen::Matrix4d& cam_pose_wc,
-                          const rclcpp::Time& stamp) {
+void System::Stop() {
+  if (!is_running_) return;
+  is_running_ = false;
+#ifdef USE_PANGOLIN_VIEWER
+  if (pangolin_viewer_) {
+    pangolin_viewer_->request_terminate();
+  }
+#endif
+  slam_.shutdown();
+  exec_.cancel();
+#ifdef USE_PANGOLIN_VIEWER
+  if (pangolin_viewer_thread_.joinable()) {
+    pangolin_viewer_thread_.join();
+  }
+#endif
+}
+
+void System::PublishPose(const Eigen::Matrix4d& cam_pose_wc,
+                         const rclcpp::Time& stamp) {
   // Extract rotation matrix and translation vector from
   Eigen::Matrix3d rot(cam_pose_wc.block<3, 3>(0, 0));
   Eigen::Translation3d trans(cam_pose_wc.block<3, 1>(0, 3));
@@ -90,7 +129,7 @@ void system::publish_pose(const Eigen::Matrix4d& cam_pose_wc,
   }
 }
 
-void system::setParams() {
+void System::DeclareAndSetParams() {
   map_frame_ = std::string("map_frame");
   map_frame_ = node_->declare_parameter("map_frame", map_frame_);
 
@@ -105,9 +144,17 @@ void system::setParams() {
   transform_tolerance_ = 0.5;
   transform_tolerance_ =
       node_->declare_parameter("transform_tolerance", transform_tolerance_);
+
+  queue_size_ = 10;
+  node_->declare_parameter("queue_size", queue_size_);
+
+#ifdef USE_PANGOLIN_VIEWER
+  start_pangolin_viewer_ = true;
+  node_->declare_parameter("start_pangolin_viewer", start_pangolin_viewer_);
+#endif
 }
 
-void system::init_pose_callback(
+void System::InitPoseCallback(
     const geometry_msgs::msg::PoseWithCovarianceStamped::SharedPtr msg) {
   Eigen::Translation3d trans(msg->pose.pose.position.x,
                              msg->pose.pose.position.y,
@@ -140,7 +187,7 @@ void system::init_pose_callback(
 
   const Eigen::Vector3d normal_vector =
       (Eigen::Vector3d() << 0., 1., 0.).finished();
-  if (!SLAM_.relocalize_by_pose_2d(cam_pose_cv, normal_vector)) {
+  if (!slam_.relocalize_by_pose_2d(cam_pose_cv, normal_vector)) {
     RCLCPP_ERROR(node_->get_logger(), "Can not set initial pose");
   }
 }

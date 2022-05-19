@@ -3,16 +3,16 @@
 
 namespace openvslam_ros {
 
-class stereo : public system {
+class Stereo : public System {
  public:
-  stereo(const std::shared_ptr<openvslam::config>& cfg,
-         const std::string& vocab_file_path, const std::string& mask_img_path);
+  Stereo(const std::shared_ptr<openvslam::config>& cfg,
+         const std::string& vocab_file_path);
 
-  void callback(const sensor_msgs::msg::Image::ConstSharedPtr& left,
-                const sensor_msgs::msg::Image::ConstSharedPtr& right);
+ private:
+  void StereoCallback(const sensor_msgs::msg::Image::ConstSharedPtr& left,
+                      const sensor_msgs::msg::Image::ConstSharedPtr& right);
 
-  message_filters::Subscriber<sensor_msgs::msg::Image> left_sf_, right_sf_,
-      right_rect_sf_, left_rect_sf_;
+  message_filters::Subscriber<sensor_msgs::msg::Image> left_sf_, right_sf_;
   using ApproximateTimeSyncPolicy =
       message_filters::sync_policies::ApproximateTime<sensor_msgs::msg::Image,
                                                       sensor_msgs::msg::Image>;

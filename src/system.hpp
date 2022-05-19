@@ -1,6 +1,10 @@
 #ifndef OPENVSLAM_ROS_H
 #define OPENVSLAM_ROS_H
 
+#ifdef USE_PANGOLIN_VIEWER
+#include <pangolin_viewer/viewer.h>
+#endif
+
 #include <cv_bridge/cv_bridge.h>
 #include <message_filters/subscriber.h>
 #include <message_filters/sync_policies/approximate_time.h>
@@ -21,25 +25,43 @@
 #include <opencv2/core/core.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/image.hpp>
+#include <thread>
 
 namespace openvslam_ros {
-class system {
+class System {
  public:
-  static std::unique_ptr<system> create(
+  static std::unique_ptr<System> Create(
       std::shared_ptr<openvslam::config> const& cfg,
-      std::string vocab_file_path, std::string maks_img_path);
+      std::string vocab_file_path);
 
-  void publish_pose(const Eigen::Matrix4d& cam_pose_wc,
-                    const rclcpp::Time& stamp);
-  void setParams();
-  openvslam::system SLAM_;
-  std::shared_ptr<openvslam::config> cfg_;
+  virtual ~System();
+  [[deprecated]] openvslam::system& GetSLAMSystem();
+
+  void Start();
+
+  void Stop();
+
+ protected:
+  System(const std::shared_ptr<openvslam::config>& cfg,
+         const std::string& vocab_file_path);
+
+  void PublishPose(Eigen::Matrix4d const& cam_pose_wc,
+                   rclcpp::Time const& stamp);
+
+ protected:
   std::shared_ptr<rclcpp::Node> node_;
-  rclcpp::executors::SingleThreadedExecutor exec_;
-  rmw_qos_profile_t custom_qos_;
-  cv::Mat mask_;
-  std::vector<double> track_times_;
   std::shared_ptr<rclcpp::Publisher<nav_msgs::msg::Odometry>> pose_pub_;
+  rclcpp::executors::SingleThreadedExecutor exec_;
+  int queue_size_ = 10;
+
+ private:
+  void DeclareAndSetParams();
+
+  void InitPoseCallback(
+      const geometry_msgs::msg::PoseWithCovarianceStamped::SharedPtr msg);
+
+ private:
+  // tf2 related
   std::shared_ptr<
       rclcpp::Subscription<geometry_msgs::msg::PoseWithCovarianceStamped>>
       init_pose_sub_;
@@ -48,16 +70,21 @@ class system {
   std::string camera_frame_;
   std::unique_ptr<tf2_ros::Buffer> tf_;
   std::shared_ptr<tf2_ros::TransformListener> transform_listener_;
-  bool publish_tf_;
   double transform_tolerance_;
+  bool publish_tf_;
 
- protected:
-  system(const std::shared_ptr<openvslam::config>& cfg,
-         const std::string& vocab_file_path, const std::string& mask_img_path);
+  // SLAM
+  openvslam::system slam_;
+  std::shared_ptr<openvslam::config> cfg_;
 
- private:
-  void init_pose_callback(
-      const geometry_msgs::msg::PoseWithCovarianceStamped::SharedPtr msg);
+  bool is_running_ = false;
+
+// Pangolin viewer
+#ifdef USE_PANGOLIN_VIEWER
+  std::unique_ptr<pangolin_viewer::viewer> pangolin_viewer_;
+  std::thread pangolin_viewer_thread_;
+  bool start_pangolin_viewer_ = false;
+#endif
 };
 
 }  // namespace openvslam_ros

@@ -64,7 +64,8 @@ set(popl_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/3rd/popl/include)
 include_directories(${popl_INCLUDE_DIR})
 
 # pangolin viewer
-set(USE_PANGOLIN_VIEWER OFF CACHE BOOL "Enable Pangolin Viewer")
+find_package(Pangolin QUIET)
+set(USE_PANGOLIN_VIEWER ${Pangolin_FOUND} CACHE BOOL "Enable Pangolin Viewer")
 if(USE_PANGOLIN_VIEWER)
     find_library(Pangolin_Viewer_LIB pangolin_viewer)
     find_package(Pangolin REQUIRED)

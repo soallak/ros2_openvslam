@@ -2,35 +2,32 @@ if(USE_PANGOLIN_VIEWER)
     message(STATUS "Viewer for examples: pangolin viewer")
 endif()
 
-set(EXECUTABLE_TARGETS "")
-
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 set(SRCS system.cpp stereo.cpp)
 
 add_executable(run_slam run_slam.cc ${SRCS})
-list(APPEND EXECUTABLE_TARGETS run_slam)
+set(EXECUTABLE_TARGET run_slam)
 
-foreach(EXECUTABLE_TARGET IN LISTS EXECUTABLE_TARGETS)
-    # pangolin_viewer is used on a priority basis
-    if(USE_PANGOLIN_VIEWER)
-        # set macro flag
-        target_compile_definitions(${EXECUTABLE_TARGET}
-                PRIVATE -DUSE_PANGOLIN_VIEWER)
-        # link viewer
-        target_link_libraries(${EXECUTABLE_TARGET} PRIVATE
-                ${Pangolin_Viewer_LIB} ${Pangolin_LIBRARIES})
-    endif()
-
-    # setup yaml-cpp
+# pangolin_viewer is used on a priority basis
+if(USE_PANGOLIN_VIEWER)
+    # set macro flag
+    target_compile_definitions(${EXECUTABLE_TARGET}
+            PRIVATE -DUSE_PANGOLIN_VIEWER)
+    # link viewer
     target_link_libraries(${EXECUTABLE_TARGET} PRIVATE
-        yaml-cpp)
+            ${Pangolin_Viewer_LIB} ${Pangolin_LIBRARIES})
+endif()
 
-    # build
-    target_link_libraries(${EXECUTABLE_TARGET}
-                          PRIVATE openvslam::openvslam)
+# setup yaml-cpp
+target_link_libraries(${EXECUTABLE_TARGET} PRIVATE
+yaml-cpp)
 
-    ament_target_dependencies(${EXECUTABLE_TARGET}
+# build
+target_link_libraries(${EXECUTABLE_TARGET}
+                    PRIVATE openvslam::openvslam)
+
+ament_target_dependencies(${EXECUTABLE_TARGET}
     PUBLIC
         rclcpp
         cv_bridge
@@ -48,8 +45,6 @@ foreach(EXECUTABLE_TARGET IN LISTS EXECUTABLE_TARGETS)
         slam_tracepoint_provider
         OpenCV
         spdlog
-    )
-    install(TARGETS ${EXECUTABLE_TARGET}
-            DESTINATION lib/${PROJECT_NAME})
-
-endforeach()
+)
+install(TARGETS ${EXECUTABLE_TARGET}
+    DESTINATION lib/${PROJECT_NAME})
