@@ -1,37 +1,28 @@
-#ifndef OPENVSLAM_ROS_H
-#define OPENVSLAM_ROS_H
+#pragma once
 
 #ifdef USE_PANGOLIN_VIEWER
 #include <pangolin_viewer/viewer.h>
 #endif
 
-#include <cv_bridge/cv_bridge.h>
-#include <message_filters/subscriber.h>
-#include <message_filters/sync_policies/approximate_time.h>
-#include <message_filters/sync_policies/exact_time.h>
-#include <message_filters/synchronizer.h>
 #include <openvslam/config.h>
 #include <openvslam/system.h>
-#include <openvslam/util/stereo_rectifier.h>
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
 
 #include <geometry_msgs/msg/pose_with_covariance_stamped.hpp>
-#include <image_transport/image_transport.hpp>
-#include <image_transport/subscriber_filter.hpp>
 #include <memory>
 #include <nav_msgs/msg/odometry.hpp>
-#include <opencv2/core/core.hpp>
 #include <rclcpp/rclcpp.hpp>
-#include <sensor_msgs/msg/image.hpp>
 #include <thread>
 
 namespace openvslam_ros {
 class System {
  public:
+  enum class Type { Stereo = 0, StereoDepth = 1 };
+
   static std::unique_ptr<System> Create(
-      std::shared_ptr<openvslam::config> const& cfg,
+      Type type, std::shared_ptr<openvslam::config> const& cfg,
       std::string vocab_file_path);
 
   virtual ~System();
@@ -88,5 +79,3 @@ class System {
 };
 
 }  // namespace openvslam_ros
-
-#endif  // OPENVSLAM_ROS_H

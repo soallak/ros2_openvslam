@@ -18,11 +18,12 @@
 
 #include "system.hpp"
 
-void Tracking(const std::shared_ptr<openvslam::config>& cfg,
+void Tracking(openvslam_ros::System::Type type,
+              const std::shared_ptr<openvslam::config>& cfg,
               const std::string& vocab_file_path, const bool eval_log,
               const std::string& map_db_path) {
   std::shared_ptr<openvslam_ros::System> ros =
-      openvslam_ros::System::Create(cfg, vocab_file_path);
+      openvslam_ros::System::Create(type, cfg, vocab_file_path);
 
   ros->Start();
 
@@ -54,6 +55,9 @@ int main(int argc, char* argv[]) {
       "", "eval-log", "store trajectory and tracking times for evaluation");
   auto map_db_path = op.add<popl::Value<std::string>>(
       "", "map-db", "store a map database at this path after SLAM", "");
+
+  auto type =
+      op.add<popl::Value<std::string>>("t", "type", "stereo or stereo-depth");
 
   try {
     op.parse(argc, argv);
@@ -87,12 +91,21 @@ int main(int argc, char* argv[]) {
   try {
     cfg = std::make_shared<openvslam::config>(setting_file_path->value());
   } catch (const std::exception& e) {
-    std::cerr << e.what() << std::endl;
+    spdlog::error(e.what());
     return EXIT_FAILURE;
   }
 
+  openvslam_ros::System::Type system_type;
+  if (type->value() == "stereo") {
+    system_type = openvslam_ros::System::Type::Stereo;
+  } else if (type->value() == "stereo-depth") {
+    system_type = openvslam_ros::System::Type::StereoDepth;
+  } else {
+    spdlog::error(fmt::format("Unknwon Type {}", system_type));
+  }
+
   // run tracking
-  Tracking(cfg, vocab_file_path->value(), eval_log->is_set(),
+  Tracking(system_type, cfg, vocab_file_path->value(), eval_log->is_set(),
            map_db_path->value());
 
   return EXIT_SUCCESS;

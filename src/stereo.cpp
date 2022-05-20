@@ -1,13 +1,13 @@
 #include "stereo.hpp"
 
+#include <cv_bridge/cv_bridge.h>
+
 #include <chrono>
 #include <opencv2/core.hpp>
-#include <opencv2/imgcodecs.hpp>
 #include <string>
 
 // clang-format off
 // todo: make this conditional at compile time
-#define LTTNG_UST_TRACEPOINT_DEFINE
 #define LTTNG_UST_TRACEPOINT_PROBE_DYNAMIC_LINKAGE
 #include <slam_tracepoint_provider/tracepoint.hpp>
 // clang-format on
@@ -20,7 +20,7 @@ Stereo::Stereo(const std::shared_ptr<openvslam::config>& cfg,
       left_sf_(node_, "left/image_rect"),
       right_sf_(node_, "right/image_rect") {
   // Additional Parameters
-  use_exact_time_ = false;
+  use_exact_time_ = true;
   use_exact_time_ = node_->declare_parameter("use_exact_time", use_exact_time_);
 
   if (use_exact_time_) {
@@ -29,7 +29,7 @@ Stereo::Stereo(const std::shared_ptr<openvslam::config>& cfg,
     exact_time_sync_->registerCallback(&Stereo::StereoCallback, this);
   } else {
     approx_time_sync_ = std::make_unique<ApproximateTimeSyncPolicy::Sync>(
-        10, left_sf_, right_sf_);
+        static_cast<uint32_t>(queue_size_), left_sf_, right_sf_);
     approx_time_sync_->registerCallback(&Stereo::StereoCallback, this);
   }
 }

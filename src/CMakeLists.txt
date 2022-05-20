@@ -4,7 +4,7 @@ endif()
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
-set(SRCS system.cpp stereo.cpp)
+set(SRCS system.cpp stereo.cpp stereo_depth.cpp)
 
 add_executable(run_slam run_slam.cc ${SRCS})
 set(EXECUTABLE_TARGET run_slam)
@@ -45,6 +45,7 @@ ament_target_dependencies(${EXECUTABLE_TARGET}
         slam_tracepoint_provider
         OpenCV
         spdlog
+        stereo_msgs
 )
 install(TARGETS ${EXECUTABLE_TARGET}
     DESTINATION lib/${PROJECT_NAME})

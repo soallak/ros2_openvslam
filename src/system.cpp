@@ -12,14 +12,21 @@
 #include <opencv2/imgcodecs.hpp>
 
 #include "stereo.hpp"
+#include "stereo_depth.hpp"
 
 namespace openvslam_ros {
 
 std::unique_ptr<System> System::Create(
-    std::shared_ptr<openvslam::config> const& cfg,
+    Type type, std::shared_ptr<openvslam::config> const& cfg,
     std::string vocab_file_path) {
   if (cfg->camera_->setup_type_ == openvslam::camera::setup_type_t::Stereo) {
-    return std::make_unique<openvslam_ros::Stereo>(cfg, vocab_file_path);
+    if (type == Type::Stereo)
+      return std::make_unique<openvslam_ros::Stereo>(cfg, vocab_file_path);
+    else if (type == Type::StereoDepth)
+      return std::make_unique<openvslam_ros::StereoDepth>(cfg, vocab_file_path);
+    else
+      throw std::runtime_error("Invalid System Type");
+
   } else {
     throw std::runtime_error("Invalid setup type: " +
                              cfg->camera_->get_setup_type_string());
@@ -54,6 +61,7 @@ void System::Start() {
   exec_.add_node(node_);
 #ifdef USE_PANGOLIN_VIEWER
   if (start_pangolin_viewer_) {
+    RCLCPP_INFO_STREAM(node_->get_logger(), "Starting Pangolin Viewer");
     pangolin_viewer_ = std::make_unique<pangolin_viewer::viewer>(
         openvslam::util::yaml_optional_ref(cfg_->yaml_node_, "PangolinViewer"),
         &slam_, slam_.get_frame_publisher(), slam_.get_map_publisher());
@@ -150,7 +158,8 @@ void System::DeclareAndSetParams() {
 
 #ifdef USE_PANGOLIN_VIEWER
   start_pangolin_viewer_ = true;
-  node_->declare_parameter("start_pangolin_viewer", start_pangolin_viewer_);
+  start_pangolin_viewer_ = node_->declare_parameter<bool>(
+      "start_pangolin_viewer", start_pangolin_viewer_);
 #endif
 }
 

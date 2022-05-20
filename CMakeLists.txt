@@ -40,6 +40,7 @@ find_package(tf2_msgs REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(slam_tracepoint_provider REQUIRED)
 find_package(spdlog REQUIRED)
+find_package(stereo_msgs REQUIRED)
 
 # thread library
 find_package(Threads REQUIRED)

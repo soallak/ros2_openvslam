@@ -4,22 +4,18 @@
 
 ## Subscribed topics
 
-### monocular setup
-
-- `/initialpose`
-- `camera/image_raw`
-
-### stereo setup
+### Stereo setup
 
 - `/initialpose`
 - `left/image_raw`
 - `right/image_raw`
 
-### RGBD setup
+### Stereo-Depth setup
 
 - `/initialpose`
-- `camera/color/image_raw`
-- `camera/depth/image_raw`
+- `left/image_rect`
+- `left/camera_info`
+- `disparity`
 
 ## Published topics
 
@@ -31,4 +27,6 @@
 - `camera_frame`
 - `publish_tf`
 - `transform_tolerance`
-- `use_exact_time` (stereo, RGBD only)
+- `use_exact_time`
+- `queue_size`
+- `start_pangolin_viewer`
