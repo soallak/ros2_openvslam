@@ -15,6 +15,7 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <popl.hpp>
+#include <type_traits>
 
 #include "system.hpp"
 
@@ -101,7 +102,10 @@ int main(int argc, char* argv[]) {
   } else if (type->value() == "stereo-depth") {
     system_type = openvslam_ros::System::Type::StereoDepth;
   } else {
-    spdlog::error(fmt::format("Unknwon Type {}", system_type));
+    spdlog::error(fmt::format(
+        "Unknwon Type {}",
+        static_cast<std::underlying_type_t<openvslam_ros::System::Type>>(
+            system_type)));
   }
 
   // run tracking
